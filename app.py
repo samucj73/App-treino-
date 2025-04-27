@@ -22,7 +22,7 @@ def criar_tabela():
         cursor = conn.cursor()
 
         # Criar a tabela se ela não existir
-        criar_tabela_sql = """
+        criar_tabela_sql = ""gf"
         CREATE TABLE IF NOT EXISTS usuarios (
             id SERIAL PRIMARY KEY,
             nome VARCHAR(100),
@@ -34,7 +34,7 @@ def criar_tabela():
             objetivo VARCHAR(100),
             experiencia VARCHAR(20)
         );
-        """
+        ""gf"
         cursor.execute(criar_tabela_sql)
         conn.commit()
         print("Tabela criada com sucesso!")
