@@ -24,7 +24,7 @@ def criar_tabela():
 
         # Criar a tabela se ela não existir (agora com nome 'usuarios_a')
         criar_tabela_sql = """
-        CREATE TABLE IF NOT EXISTS usuarios_a (
+        CREATE TABLE IF NOT EXISTS usuariosca (
             id SERIAL PRIMARY KEY,
             nome VARCHAR(100),
             senha VARCHAR(100),
@@ -38,7 +38,7 @@ def criar_tabela():
         """
         cursor.execute(criar_tabela_sql)
         conn.commit()
-        print("Tabela 'usuarios_a' criada com sucesso!")
+        print("Tabela 'usuariosca' criada com sucesso!")
 
     except Exception as e:
         print(f"Ocorreu um erro ao criar a tabela: {e}")
@@ -57,7 +57,7 @@ def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experi
 
     # Inserir os dados do usuário na tabela 'usuarios_a'
     insert_query = sql.SQL("""
-        INSERT INTO usuarios_a (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        INSERT INTO usuariosca (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """)
     cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
@@ -71,7 +71,7 @@ def obter_usuario(nome, senha):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    select_query = sql.SQL("SELECT * FROM usuarios_a WHERE nome = %s AND senha = %s")
+    select_query = sql.SQL("SELECT * FROM usuariosca WHERE nome = %s AND senha = %s")
     cursor.execute(select_query, (nome, senha))
     usuario = cursor.fetchone()
 
