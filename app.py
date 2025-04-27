@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 # Função para conectar ao banco de dados PostgreSQL
 def get_db_connection():
     conn = psycopg2.connect(
-        host="your_host",  # Substitua pelo host do seu banco de dados no Render
-        database="your_database",  # Substitua pelo nome do banco de dados
-        user="your_user",  # Substitua pelo seu nome de usuário
-        password="your_password"  # Substitua pela sua senha
+        host="dpg-d06oq3qli9vc73ejebbg-a",  # Substitua pelo host do seu banco de dados no Render
+        database="sal_6scc",  # Substitua pelo nome do banco de dados
+        user="sal_6scc_user",  # Substitua pelo seu nome de usuário
+        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"  # Substitua pela sua senha
     )
     return conn
 
