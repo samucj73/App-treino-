@@ -23,7 +23,7 @@ def criar_tabela():
 
         # Criar a tabela se ela não existir
         criar_tabela_sql = """
-        CREATE TABLE IF NOT EXISTS usuarios (
+        CREATE TABLE IF NOT EXISTS usuariosa (
             id SERIAL PRIMARY KEY,
             nome VARCHAR(100),
             senha VARCHAR(100),
@@ -56,7 +56,7 @@ def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experi
 
     # Inserir os dados do usuário no banco de dados
     insert_query = sql.SQL("""
-        INSERT INTO usuarios (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        INSERT INTO usuariosa (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """)
     cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
@@ -70,7 +70,7 @@ def obter_usuario(nome, senha):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    select_query = sql.SQL("SELECT * FROM usuarios WHERE nome = %s AND senha = %s")
+    select_query = sql.SQL("SELECT * FROM usuariosa WHERE nome = %s AND senha = %s")
     cursor.execute(select_query, (nome, senha))
     usuario = cursor.fetchone()
 
