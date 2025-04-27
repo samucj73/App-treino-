@@ -2,30 +2,40 @@ import streamlit as st
 import pandas as pd
 import psycopg2
 from psycopg2 import sql
-import matplotlib.pyplot as plt
 from fpdf import FPDF
 
 # Função para conectar ao banco de dados PostgreSQL
 def get_db_connection():
     conn = psycopg2.connect(
-        host="dpg-d06oq3qli9vc73ejebbg-a",  
-        database="sal_6scc",  
-        user="sal_6scc_user",  
-        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"
+        host="dpg-d06oq3qli9vc73ejebbg-a",  # Substitua pelo host do seu banco de dados no Render
+        database="sal_6scc",  # Substitua pelo nome do banco de dados
+        user="sal_6scc_user",  # Substitua pelo seu nome de usuário
+        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"  # Substitua pela sua senha
     )
     return conn
 
-# Função para criar as tabelas no banco
-def criar_tabelas():
+# Função para criar a tabela no banco de dados, se ela não existir
+def criar_tabela():
     try:
+        # Conecte-se ao banco de dados PostgreSQL
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Criar tabela usuarios se não existir
+        # Verifique se a tabela "usuarios" já existe
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'usuarios'
+        );
+        """)
+
+        # Se a tabela não existir, crie-a
+        if not cursor.fetchone()[0]:
+            criar_tabela_sql = """
+            CREATE TABLE usuarios (
                 id SERIAL PRIMARY KEY,
-                nome VARCHAR(100) UNIQUE,
+                nome VARCHAR(100),
+                senha VARCHAR(100),
                 idade INT,
                 peso FLOAT,
                 altura FLOAT,
@@ -33,168 +43,151 @@ def criar_tabelas():
                 objetivo VARCHAR(100),
                 experiencia VARCHAR(20)
             );
-        """)
-        # Criar tabela fichas de treino se não existir
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS fichas_treino (
-                id SERIAL PRIMARY KEY,
-                usuario_id INT REFERENCES usuarios(id),
-                treino TEXT
-            );
-        """)
-        conn.commit()
-        print("Tabelas verificadas/criadas com sucesso!")
+            """
+            cursor.execute(criar_tabela_sql)
+            conn.commit()
+            print("Tabela criada com sucesso!")
+        else:
+            print("Tabela já existe, não será recriada.")
+        
     except Exception as e:
-        print(f"Erro ao criar tabelas: {e}")
+        print(f"Ocorreu um erro: {e}")
+        
     finally:
         cursor.close()
         conn.close()
 
-# Criar as tabelas ao iniciar
-criar_tabelas()
+# Chamar a função para criar a tabela
+criar_tabela()
 
-# Função para cadastrar ou atualizar usuário
-def cadastrar_usuario(nome, idade, peso, altura, genero, objetivo, experiencia):
+# Função para cadastrar o usuário
+def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Verificar se usuário já existe
-    cursor.execute("SELECT id FROM usuarios WHERE nome = %s", (nome,))
-    usuario = cursor.fetchone()
-
-    if usuario:
-        # Atualizar dados existentes
-        cursor.execute("""
-            UPDATE usuarios
-            SET idade = %s, peso = %s, altura = %s, genero = %s, objetivo = %s, experiencia = %s
-            WHERE nome = %s
-        """, (idade, peso, altura, genero, objetivo, experiencia, nome))
-    else:
-        # Inserir novo usuário
-        cursor.execute("""
-            INSERT INTO usuarios (nome, idade, peso, altura, genero, objetivo, experiencia)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (nome, idade, peso, altura, genero, objetivo, experiencia))
-
+    # Inserir os dados do usuário no banco de dados
+    insert_query = sql.SQL("""
+        INSERT INTO usuarios (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """)
+    cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
     conn.commit()
+
     cursor.close()
     conn.close()
 
-# Função para obter usuário
-def obter_usuario(nome):
+# Função para obter dados do usuário
+def obter_usuario(nome, senha):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE nome = %s", (nome,))
+
+    select_query = sql.SQL("SELECT * FROM usuarios WHERE nome = %s AND senha = %s")
+    cursor.execute(select_query, (nome, senha))
     usuario = cursor.fetchone()
+
     cursor.close()
     conn.close()
+    
     return usuario
 
-# Função para gerar treino personalizado
-def gerar_treino(experiencia):
-    if experiencia == "iniciante":
-        treino = {
-            "Segunda": "Peito e Tríceps - 3x12",
-            "Terça": "Costas e Bíceps - 3x12",
-            "Quarta": "Pernas - 3x15",
-            "Quinta": "Ombros e Abdômen - 3x12",
-            "Sexta": "Treino Funcional - 2x circuito",
-            "Sábado": "Alongamento/Yoga",
-            "Domingo": "Descanso"
-        }
-    elif experiencia == "intermediário":
-        treino = {
-            "Segunda": "Peito - 4x10",
-            "Terça": "Costas - 4x10",
-            "Quarta": "Pernas e Abdômen - 4x12",
-            "Quinta": "Ombros e Trapézio - 4x10",
-            "Sexta": "Bíceps e Tríceps - 4x10",
-            "Sábado": "Treino HIIT - 3x circuito",
-            "Domingo": "Descanso"
-        }
-    else:  # Avançado
-        treino = {
-            "Segunda": "Peito pesado + Abdômen - 5x8",
-            "Terça": "Costas + Bíceps pesado - 5x8",
-            "Quarta": "Pernas (agachamento livre) - 5x10",
-            "Quinta": "Ombros + Cardio intenso - 5x10",
-            "Sexta": "Braços (ênfase) - 5x8",
-            "Sábado": "Funcional + Core - 4x circuito",
-            "Domingo": "Mobilidade/Recuperação"
-        }
+# Função para calcular IMC
+def calcular_imc(peso, altura):
+    imc = peso / (altura ** 2)
+    return round(imc, 2)
+
+# Função para calcular metabolismo basal (Harris-Benedict)
+def calcular_metabolismo_basal(peso, altura, idade, genero):
+    if genero == "masculino":
+        metabolismo_basal = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * idade)
+    else:
+        metabolismo_basal = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * idade)
+    
+    return round(metabolismo_basal, 2)
+
+# Função para exibir a situação do usuário com base no IMC
+def situacao_imc(imc):
+    if imc < 18.5:
+        return "Abaixo do peso"
+    elif 18.5 <= imc <= 24.9:
+        return "Peso normal"
+    elif 25 <= imc <= 29.9:
+        return "Sobrepeso"
+    else:
+        return "Obesidade"
+
+# Função para criar o treino personalizado
+def gerar_treino(usuario):
+    treino = {
+        "Segunda-feira": [
+            {"exercicio": "Supino Reto", "series_repeticoes": "4x10-12", "equipamento": "Barra e banco reto"},
+            {"exercicio": "Supino Inclinado com Halteres", "series_repeticoes": "4x8-10", "equipamento": "Halteres e banco inclinado"},
+            {"exercicio": "Crossover", "series_repeticoes": "3x12-15", "equipamento": "Cabo e polia"}
+        ],
+        "Terça-feira": [
+            {"exercicio": "Puxada na Barra Fixa", "series_repeticoes": "4x6-8", "equipamento": "Barra fixa"},
+            {"exercicio": "Remada Unilateral com Halteres", "series_repeticoes": "4x10-12", "equipamento": "Halteres e banco inclinado"},
+            {"exercicio": "Rosca Direta com Barra", "series_repeticoes": "3x10-12", "equipamento": "Barra reta"}
+        ]
+        # Adicionar mais dias com exercícios
+    }
     return treino
 
-# Função para salvar ficha no banco
-def salvar_ficha(usuario_id, treino_texto):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Verifica se ficha já existe
-    cursor.execute("SELECT id FROM fichas_treino WHERE usuario_id = %s", (usuario_id,))
-    ficha = cursor.fetchone()
-
-    if ficha:
-        # Atualizar ficha
-        cursor.execute("""
-            UPDATE fichas_treino
-            SET treino = %s
-            WHERE usuario_id = %s
-        """, (treino_texto, usuario_id))
-    else:
-        # Inserir nova ficha
-        cursor.execute("""
-            INSERT INTO fichas_treino (usuario_id, treino)
-            VALUES (%s, %s)
-        """, (usuario_id, treino_texto))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-# Função para gerar PDF da ficha
-def gerar_pdf(nome, treino):
+# Função para gerar o PDF da ficha de treino
+def gerar_pdf_ficha(usuario, treino):
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Ficha de Treino - {nome}", ln=True, align="C")
 
-    for dia, atividade in treino.items():
-        pdf.ln(10)
-        pdf.cell(200, 10, txt=f"{dia}: {atividade}", ln=True)
+    # Adicionar título
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, "Ficha de Treino Personalizado", ln=True, align="C")
 
-    caminho = f"ficha_{nome}.pdf"
-    pdf.output(caminho)
-    return caminho
+    # Dados do usuário
+    pdf.set_font("Arial", "", 12)
+    pdf.ln(10)
+    pdf.cell(200, 10, f"Usuário: {usuario[1]}", ln=True)
+    pdf.cell(200, 10, f"Idade: {usuario[2]}", ln=True)
+    pdf.cell(200, 10, f"Objetivo: {usuario[6]}", ln=True)
+    pdf.cell(200, 10, f"Nível: {usuario[7]}", ln=True)
+
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(200, 10, "Treino Semanal", ln=True)
+
+    # Ficha de treino
+    pdf.set_font("Arial", "", 12)
+    for dia, exercicios in treino.items():
+        pdf.ln(5)
+        pdf.cell(200, 10, f"{dia}:", ln=True)
+        for exercicio in exercicios:
+            pdf.cell(200, 10, f"{exercicio['exercicio']} - Séries: {exercicio['series_repeticoes']} - Equipamento: {exercicio['equipamento']}", ln=True)
+
+    # Salvar PDF
+    pdf.output(f"treino_{usuario[1]}.pdf")
+    return f"treino_{usuario[1]}.pdf"
 
 # Interface de login
 def login():
     nome = st.text_input("Nome")
+    senha = st.text_input("Senha", type="password")
     if st.button("Login"):
-        usuario = obter_usuario(nome)
+        usuario = obter_usuario(nome, senha)
         if usuario:
-            st.success(f"Bem-vindo de volta, {usuario[1]}!")
-
-            treino = gerar_treino(usuario[7])
-            st.subheader("Ficha Semanal:")
-            for dia, atividade in treino.items():
-                st.write(f"**{dia}**: {atividade}")
-
-            if st.button("Salvar Ficha"):
-                treino_texto = "\n".join([f"{dia}: {atividade}" for dia, atividade in treino.items()])
-                salvar_ficha(usuario[0], treino_texto)
-                st.success("Ficha salva no banco de dados!")
-
-            if st.button("Gerar PDF"):
-                caminho_pdf = gerar_pdf(usuario[1], treino)
-                with open(caminho_pdf, "rb") as file:
-                    st.download_button(label="Baixar Ficha em PDF", data=file, file_name=caminho_pdf, mime="application/pdf")
-
+            st.write(f"Bem-vindo de volta, {usuario[1]}!")
+            # Gerar treino
+            treino = gerar_treino(usuario)
+            st.write(treino)
+            
+            # Gerar e disponibilizar o PDF
+            pdf_path = gerar_pdf_ficha(usuario, treino)
+            st.download_button("Baixar Ficha de Treino", data=open(pdf_path, "rb").read(), file_name=f"treino_{usuario[1]}.pdf", mime="application/pdf")
         else:
-            st.error("Usuário não encontrado!")
+            st.error("Usuário ou senha incorretos!")
 
 # Interface de cadastro
 def cadastro():
     nome = st.text_input("Nome")
+    senha = st.text_input("Senha", type="password")
     idade = st.number_input("Idade", min_value=18, max_value=120)
     peso = st.number_input("Peso (kg)", min_value=1.0)
     altura = st.number_input("Altura (m)", min_value=1.0)
@@ -203,8 +196,8 @@ def cadastro():
     experiencia = st.selectbox("Experiência", ["iniciante", "intermediário", "avançado"])
 
     if st.button("Cadastrar"):
-        cadastrar_usuario(nome, idade, peso, altura, genero, objetivo, experiencia)
-        st.success(f"Usuário {nome} cadastrado/atualizado com sucesso!")
+        cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        st.success(f"Usuário {nome} cadastrado com sucesso!")
 
 # Função principal
 def main():
