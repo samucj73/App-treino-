@@ -7,26 +7,61 @@ import matplotlib.pyplot as plt
 # Função para conectar ao banco de dados PostgreSQL
 def get_db_connection():
     conn = psycopg2.connect(
-        host="dpg-d06oq3qli9vc73ejebbg-a",  # Substitua pelo host do seu banco de dados no Render
-        database="sal_6scc",  # Substitua pelo nome do banco de dados
-        user="sal_6scc_user",  # Substitua pelo seu nome de usuário
-        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"  # Substitua pela sua senha
+        host="dpg-d06oq3qli9vc73ejebbg-a",
+        database="sal_6scc",
+        user="sal_6scc_user",
+        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"
     )
     return conn
+
+# Função para criar a tabela no banco de dados, se ela não existir
+def criar_tabela():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'usuarios'
+        );
+        """)
+        if not cursor.fetchone()[0]:
+            criar_tabela_sql = """
+            CREATE TABLE usuarios (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100),
+                idade INT,
+                peso FLOAT,
+                altura FLOAT,
+                genero VARCHAR(10),
+                objetivo VARCHAR(100),
+                experiencia VARCHAR(20)
+            );
+            """
+            cursor.execute(criar_tabela_sql)
+            conn.commit()
+            print("Tabela criada com sucesso!")
+        else:
+            print("Tabela já existe, não será recriada.")
+    except Exception as e:
+        print(f"Ocorreu um erro: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+# Chamar a função para criar a tabela
+criar_tabela()
 
 # Função para cadastrar o usuário
 def cadastrar_usuario(nome, idade, peso, altura, genero, objetivo, experiencia):
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Inserir os dados do usuário no banco de dados
     insert_query = sql.SQL("""
         INSERT INTO usuarios (nome, idade, peso, altura, genero, objetivo, experiencia)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """)
     cursor.execute(insert_query, (nome, idade, peso, altura, genero, objetivo, experiencia))
     conn.commit()
-
     cursor.close()
     conn.close()
 
@@ -34,14 +69,11 @@ def cadastrar_usuario(nome, idade, peso, altura, genero, objetivo, experiencia):
 def obter_usuario(nome):
     conn = get_db_connection()
     cursor = conn.cursor()
-
     select_query = sql.SQL("SELECT * FROM usuarios WHERE nome = %s")
     cursor.execute(select_query, (nome,))
     usuario = cursor.fetchone()
-
     cursor.close()
     conn.close()
-    
     return usuario
 
 # Função para calcular IMC
@@ -55,10 +87,9 @@ def calcular_metabolismo_basal(peso, altura, idade, genero):
         metabolismo_basal = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * idade)
     else:
         metabolismo_basal = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * idade)
-    
     return round(metabolismo_basal, 2)
 
-# Função para exibir a situação do usuário com base no IMC
+# Função para exibir a situação do IMC
 def situacao_imc(imc):
     if imc < 18.5:
         return "Abaixo do peso"
@@ -69,35 +100,44 @@ def situacao_imc(imc):
     else:
         return "Obesidade"
 
-# Função para gerar treino semanal baseado no nível do usuário
+# Função para gerar treino semanal personalizado
 def gerar_treino(usuario):
-    experiencia = usuario[6]  # Experiência do usuário: iniciante, intermediário, avançado
-    treino = f"Treino semanal personalizado para {usuario[1]}:\n\n"
+    experiencia = usuario[7]  # Experiência está na coluna 7
+    treino = ""
 
     if experiencia == "iniciante":
-        treino += "Segunda: Peito e tríceps\n- Supino reto: 3x10\n- Tríceps pulley: 3x12\n- Flexão de braços: 3x10\n"
-        treino += "Terça: Pernas\n- Agachamento: 3x12\n- Leg press: 3x12\n- Panturrilha em pé: 3x15\n"
-        treino += "Quarta: Descanso\n"
-        treino += "Quinta: Costas e bíceps\n- Puxada frontal: 3x12\n- Rosca direta: 3x10\n- Remada unilateral: 3x12\n"
-        treino += "Sexta: Ombros\n- Desenvolvimento com barra: 3x10\n- Elevação lateral: 3x12\n- Encolhimento de ombros: 3x12\n"
-        treino += "Sábado e Domingo: Descanso\n"
-    
+        treino = {
+            "Segunda": "Treino A: Peito e Tríceps (leve)",
+            "Terça": "Descanso ou cardio leve",
+            "Quarta": "Treino B: Costas e Bíceps (leve)",
+            "Quinta": "Descanso ou yoga",
+            "Sexta": "Treino C: Pernas e Abdômen (leve)",
+            "Sábado": "Alongamento e caminhada",
+            "Domingo": "Descanso"
+        }
     elif experiencia == "intermediário":
-        treino += "Segunda: Peito e tríceps\n- Supino reto: 4x10\n- Tríceps pulley: 4x12\n- Flexão de braços: 4x12\n"
-        treino += "Terça: Pernas\n- Agachamento: 4x10\n- Leg press: 4x12\n- Panturrilha em pé: 4x15\n"
-        treino += "Quarta: Costas e bíceps\n- Puxada frontal: 4x10\n- Rosca direta: 4x10\n- Remada unilateral: 4x12\n"
-        treino += "Quinta: Ombros\n- Desenvolvimento com barra: 4x10\n- Elevação lateral: 4x12\n- Encolhimento de ombros: 4x12\n"
-        treino += "Sexta: Full body (treino completo)\n- Supino reto: 4x10\n- Agachamento: 4x10\n- Puxada frontal: 4x12\n"
-        treino += "Sábado e Domingo: Descanso\n"
-
+        treino = {
+            "Segunda": "Treino A: Peito e Tríceps (moderado)",
+            "Terça": "Treino B: Costas e Bíceps (moderado)",
+            "Quarta": "Cardio + Abdômen",
+            "Quinta": "Treino C: Pernas e Ombros (moderado)",
+            "Sexta": "Funcional ou HIIT leve",
+            "Sábado": "Corrida leve ou circuito",
+            "Domingo": "Descanso"
+        }
     elif experiencia == "avançado":
-        treino += "Segunda: Peito e tríceps\n- Supino reto: 5x8\n- Tríceps pulley: 5x10\n- Flexão de braços: 5x12\n"
-        treino += "Terça: Pernas\n- Agachamento: 5x8\n- Leg press: 5x10\n- Panturrilha em pé: 5x15\n"
-        treino += "Quarta: Costas e bíceps\n- Puxada frontal: 5x8\n- Rosca direta: 5x8\n- Remada unilateral: 5x10\n"
-        treino += "Quinta: Ombros\n- Desenvolvimento com barra: 5x8\n- Elevação lateral: 5x10\n- Encolhimento de ombros: 5x10\n"
-        treino += "Sexta: Full body (treino completo)\n- Supino reto: 5x8\n- Agachamento: 5x8\n- Puxada frontal: 5x10\n"
-        treino += "Sábado e Domingo: Descanso\n"
-
+        treino = {
+            "Segunda": "Treino A: Peito pesado",
+            "Terça": "Treino B: Costas pesadas",
+            "Quarta": "Treino C: Pernas (pesadas)",
+            "Quinta": "Treino D: Ombros + Abdômen",
+            "Sexta": "Treino E: Braços",
+            "Sábado": "Treino funcional intenso ou crossfit",
+            "Domingo": "Alongamento e mobilidade"
+        }
+    else:
+        treino = {"Mensagem": "Experiência não definida corretamente."}
+    
     return treino
 
 # Interface de login
@@ -106,18 +146,21 @@ def login():
     if st.button("Login"):
         usuario = obter_usuario(nome)
         if usuario:
-            st.write(f"Bem-vindo de volta, {usuario[1]}!")
-            # Exibir IMC, metabolismo basal e situação
+            st.success(f"Bem-vindo de volta, {usuario[1]}!")
             imc = calcular_imc(usuario[3], usuario[4])
-            st.write(f"Seu IMC: {imc}")
-            st.write(f"Sua situação IMC: {situacao_imc(imc)}")
-            
-            metabolismo_basal = calcular_metabolismo_basal(usuario[3], usuario[4], usuario[2], usuario[5])
-            st.write(f"Seu metabolismo basal: {metabolismo_basal} kcal/dia")
-            
-            # Gerar treino
+            metabolismo = calcular_metabolismo_basal(usuario[3], usuario[4], usuario[2], usuario[5])
+            situacao = situacao_imc(imc)
+
+            st.subheader("Seus dados:")
+            st.write(f"IMC: {imc} ({situacao})")
+            st.write(f"Metabolismo Basal: {metabolismo} kcal/dia")
+            st.write(f"Objetivo: {usuario[6]}")
+            st.write(f"Experiência: {usuario[7]}")
+
             treino = gerar_treino(usuario)
-            st.write(treino)
+            st.subheader("Ficha de Treino Semanal")
+            for dia, atividade in treino.items():
+                st.write(f"**{dia}:** {atividade}")
         else:
             st.error("Usuário não encontrado!")
 
@@ -142,4 +185,9 @@ def main():
     opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
 
     if opcao == "Login":
-        login
+        login()
+    elif opcao == "Cadastro":
+        cadastro()
+
+if __name__ == "__main__":
+    main()
