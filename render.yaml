@@ -1,6 +1,11 @@
 services:
   - type: web
-    name: treino-personalizado
+    name: treino-personalizado-app
     env: python
+    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "streamlit run app.py"
+    branch: main
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: true
