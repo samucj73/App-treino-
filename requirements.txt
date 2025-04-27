@@ -1,4 +1,5 @@
 streamlit
-matplotlib
 pandas
 psycopg2-binary
+matplotlib
+fpdf
