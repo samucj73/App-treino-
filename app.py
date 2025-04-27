@@ -1,10 +1,8 @@
 import streamlit as st
-import pandas as pd
 import psycopg2
 from psycopg2 import sql
-import matplotlib.pyplot as plt
 
-# Conexão com o banco
+# ======== Banco de dados =========
 def get_db_connection():
     conn = psycopg2.connect(
         host="dpg-d06oq3qli9vc73ejebbg-a",
@@ -14,10 +12,54 @@ def get_db_connection():
     )
     return conn
 
-# Funções de banco (criar tabela, cadastrar, obter usuário)
-# -- (mesmas funções que você já tem, não muda nada aqui!)
+def criar_tabela():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        criar_tabela_sql = """
+        CREATE TABLE IF NOT EXISTS usuariosam (
+            id SERIAL PRIMARY KEY,
+            nome VARCHAR(100),
+            senha VARCHAR(100),
+            idade INT,
+            peso FLOAT,
+            altura FLOAT,
+            genero VARCHAR(10),
+            objetivo VARCHAR(100),
+            experiencia VARCHAR(20)
+        );
+        """
+        cursor.execute(criar_tabela_sql)
+        conn.commit()
+    except Exception as e:
+        print(f"Erro ao criar tabela: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
-# Função para gerar treino
+def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    insert_query = sql.SQL("""
+        INSERT INTO usuariosam (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """)
+    cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def obter_usuario(nome, senha):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    select_query = sql.SQL("SELECT * FROM usuariosam WHERE nome = %s AND senha = %s")
+    cursor.execute(select_query, (nome, senha))
+    usuario = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return usuario
+
+# ======== Funções do app =========
 def gerar_treino(usuario):
     idade = usuario[3]
     peso = usuario[4]
@@ -30,57 +72,29 @@ def gerar_treino(usuario):
 
     if experiencia == "iniciante":
         treino += """
-- Agachamento (3x10)
-- Flexão de braço (3x10)
-- Remada unilateral (3x12 por lado)
+- **Agachamento** (3x10)
+- **Flexão de braço** (3x10)
+- **Remada unilateral** (3x12 por lado)
+
 **Equipamentos**: Halteres, banco
 """
     elif experiencia == "intermediário":
         treino += """
-- Agachamento com barra (4x8)
-- Supino reto com barra (4x8)
-- Levantamento terra (4x8)
+- **Agachamento com barra** (4x8)
+- **Supino reto com barra** (4x8)
+- **Levantamento terra** (4x8)
+
 **Equipamentos**: Barra, halteres
 """
     elif experiencia == "avançado":
         treino += """
-- Agachamento com barra (5x6)
-- Supino reto pesado (5x6)
-- Deadlift pesado (5x6)
+- **Agachamento com barra pesado** (5x6)
+- **Supino reto pesado** (5x6)
+- **Deadlift pesado** (5x6)
+
 **Equipamentos**: Barra, pesos livres
 """
     return treino
-
-# Função principal
-def main():
-    st.title("App de Treino Personalizado")
-
-    # Inicializar sessão
-    if "usuario" not in st.session_state:
-        st.session_state.usuario = None
-
-    # Se usuário já logado
-    if st.session_state.usuario:
-        st.success(f"Bem-vindo, {st.session_state.usuario[1]}!")
-
-        # Mostrar treino
-        treino = gerar_treino(st.session_state.usuario)
-        st.markdown(treino)
-
-        # Botão de logout
-        if st.button("Logout"):
-            st.session_state.usuario = None
-            st.experimental_rerun()
-
-    else:
-        opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
-
-        if opcao == "Login":
-            login()
-        elif opcao == "Cadastro":
-            cadastro()
-
-# Funções de login e cadastro
 
 def login():
     nome = st.text_input("Nome")
@@ -108,6 +122,35 @@ def cadastro():
         cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia)
         st.success(f"Usuário {nome} cadastrado com sucesso!")
 
-# Rodar
+def main():
+    st.title("App de Treino Personalizado")
+
+    # Inicializar sessão
+    if "usuario" not in st.session_state:
+        st.session_state.usuario = None
+
+    criar_tabela()
+
+    # Se usuário já logado
+    if st.session_state.usuario:
+        st.success(f"Bem-vindo, {st.session_state.usuario[1]}!")
+
+        # Mostrar treino
+        treino = gerar_treino(st.session_state.usuario)
+        st.markdown(treino)
+
+        # Botão de logout
+        if st.button("Logout"):
+            st.session_state.usuario = None
+            st.experimental_rerun()
+
+    else:
+        opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
+
+        if opcao == "Login":
+            login()
+        elif opcao == "Cadastro":
+            cadastro()
+
 if __name__ == "__main__":
     main()
