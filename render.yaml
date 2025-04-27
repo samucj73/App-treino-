@@ -1,0 +1,11 @@
+build:
+  dockerfile: Dockerfile
+
+services:
+  - type: web
+    name: app-treino
+    env: python
+    plan: free
+    static_publish_path: /app
+    env_variables:
+      STREAMLIT_SERVER_PORT: 8501
