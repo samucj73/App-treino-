@@ -14,6 +14,51 @@ def get_db_connection():
     )
     return conn
 
+# Função para criar a tabela no banco de dados, se ela não existir
+def criar_tabela():
+    try:
+        # Conecte-se ao banco de dados PostgreSQL
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Verifique se a tabela "usuarios" já existe
+        cursor.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'usuarios'
+        );
+        """)
+
+        # Se a tabela não existir, crie-a
+        if not cursor.fetchone()[0]:
+            criar_tabela_sql = """
+            CREATE TABLE usuarios (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100),
+                idade INT,
+                peso FLOAT,
+                altura FLOAT,
+                genero VARCHAR(10),
+                objetivo VARCHAR(100),
+                experiencia VARCHAR(20)
+            );
+            """
+            cursor.execute(criar_tabela_sql)
+            conn.commit()
+            print("Tabela criada com sucesso!")
+        else:
+            print("Tabela já existe, não será recriada.")
+        
+    except Exception as e:
+        print(f"Ocorreu um erro: {e}")
+        
+    finally:
+        cursor.close()
+        conn.close()
+
+# Chamar a função para criar a tabela
+criar_tabela()
+
 # Função para cadastrar o usuário
 def cadastrar_usuario(nome, idade, peso, altura, genero, objetivo, experiencia):
     conn = get_db_connection()
