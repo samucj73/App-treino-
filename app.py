@@ -21,9 +21,9 @@ def criar_tabela():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Criar a tabela se ela não existir
+        # Criar a tabela se ela não existir (agora com nome 'usuarios_a')
         criar_tabela_sql = """
-        CREATE TABLE IF NOT EXISTS usuariosa (
+        CREATE TABLE IF NOT EXISTS usuarios_a (
             id SERIAL PRIMARY KEY,
             nome VARCHAR(100),
             senha VARCHAR(100),
@@ -37,7 +37,7 @@ def criar_tabela():
         """
         cursor.execute(criar_tabela_sql)
         conn.commit()
-        print("Tabela criada com sucesso!")
+        print("Tabela 'usuarios_a' criada com sucesso!")
 
     except Exception as e:
         print(f"Ocorreu um erro ao criar a tabela: {e}")
@@ -54,9 +54,9 @@ def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experi
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Inserir os dados do usuário no banco de dados
+    # Inserir os dados do usuário na tabela 'usuarios_a'
     insert_query = sql.SQL("""
-        INSERT INTO usuariosa (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
+        INSERT INTO usuarios_a (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """)
     cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
@@ -70,7 +70,7 @@ def obter_usuario(nome, senha):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    select_query = sql.SQL("SELECT * FROM usuariosa WHERE nome = %s AND senha = %s")
+    select_query = sql.SQL("SELECT * FROM usuarios_a WHERE nome = %s AND senha = %s")
     cursor.execute(select_query, (nome, senha))
     usuario = cursor.fetchone()
 
@@ -79,36 +79,40 @@ def obter_usuario(nome, senha):
     
     return usuario
 
-# Função para calcular IMC
-def calcular_imc(peso, altura):
-    imc = peso / (altura ** 2)
-    return round(imc, 2)
-
-# Função para calcular metabolismo basal (Harris-Benedict)
-def calcular_metabolismo_basal(peso, altura, idade, genero):
-    if genero == "masculino":
-        metabolismo_basal = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * idade)
-    else:
-        metabolismo_basal = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * idade)
-    
-    return round(metabolismo_basal, 2)
-
-# Função para exibir a situação do usuário com base no IMC
-def situacao_imc(imc):
-    if imc < 18.5:
-        return "Abaixo do peso"
-    elif 18.5 <= imc <= 24.9:
-        return "Peso normal"
-    elif 25 <= imc <= 29.9:
-        return "Sobrepeso"
-    else:
-        return "Obesidade"
-
-# Função para criar o treino personalizado
+# Função para gerar treino baseado nas informações do usuário
 def gerar_treino(usuario):
-    # Lógica de treino baseada nas informações do usuário
-    treino = "Treino personalizado baseado nos dados do usuário"
+    # Definir treino de acordo com a experiência
+    experiencia = usuario[7]  # A experiência é o 7º campo no banco de dados (iniciante, intermediário, avançado)
+    
+    treino = ""
+    if experiencia == "iniciante":
+        treino = """
+        - Agachamento (3 séries de 10 repetições)
+        - Flexão de braço (3 séries de 10 repetições)
+        - Remada unilateral (3 séries de 12 repetições por lado)
+        Equipamento: Halteres, banco
+        """
+    elif experiencia == "intermediário":
+        treino = """
+        - Agachamento com barra (4 séries de 8 repetições)
+        - Supino reto com barra (4 séries de 8 repetições)
+        - Levantamento terra (4 séries de 8 repetições)
+        Equipamento: Barra, halteres
+        """
+    elif experiencia == "avançado":
+        treino = """
+        - Agachamento com barra (5 séries de 6 repetições)
+        - Supino reto com barra (5 séries de 6 repetições)
+        - Deadlift (5 séries de 6 repetições)
+        Equipamento: Barra, pesos livres
+        """
     return treino
+
+# Função para exibir treino após login
+def exibir_treino(usuario):
+    treino = gerar_treino(usuario)
+    st.write("Seu treino personalizado é:")
+    st.write(treino)
 
 # Interface de login
 def login():
@@ -118,9 +122,8 @@ def login():
         usuario = obter_usuario(nome, senha)
         if usuario:
             st.write(f"Bem-vindo de volta, {usuario[1]}!")
-            # Gerar treino
-            treino = gerar_treino(usuario)
-            st.write(treino)
+            # Exibir treino personalizado
+            exibir_treino(usuario)
         else:
             st.error("Usuário ou senha incorretos!")
 
