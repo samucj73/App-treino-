@@ -1,6 +1,11 @@
+build:
+  dockerfile: Dockerfile
+
 services:
   - type: web
-    name: treino-personalizado
+    name: app-treino
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "streamlit run app.py"
+    plan: free
+    static_publish_path: /app
+    env_variables:
+      STREAMLIT_SERVER_PORT: 8501
