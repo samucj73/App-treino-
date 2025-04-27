@@ -3,6 +3,7 @@ import pandas as pd
 import psycopg2
 from psycopg2 import sql
 import matplotlib.pyplot as plt
+from fpdf import FPDF
 
 # Função para conectar ao banco de dados PostgreSQL
 def get_db_connection():
@@ -79,6 +80,20 @@ def obter_usuario(nome, senha):
     
     return usuario
 
+# Função para calcular IMC
+def calcular_imc(peso, altura):
+    imc = peso / (altura ** 2)
+    return round(imc, 2)
+
+# Função para calcular taxa de metabolismo basal (TMB)
+def calcular_metabolismo_basal(peso, altura, idade, genero):
+    if genero == "masculino":
+        tmb = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * idade)
+    else:
+        tmb = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * idade)
+    
+    return round(tmb, 2)
+
 # Função para gerar treino baseado nas informações do usuário
 def gerar_treino(usuario):
     # Definir treino de acordo com a experiência
@@ -108,11 +123,77 @@ def gerar_treino(usuario):
         """
     return treino
 
-# Função para exibir treino após login
-def exibir_treino(usuario):
+# Função para exibir informações do usuário e treino
+def exibir_informacoes(usuario):
+    # Exibindo as informações do usuário
+    st.subheader("Informações Pessoais:")
+    st.write(f"**Nome:** {usuario[1]}")
+    st.write(f"**Idade:** {usuario[3]} anos")
+    st.write(f"**Peso:** {usuario[4]} kg")
+    st.write(f"**Altura:** {usuario[5]} m")
+    st.write(f"**Gênero:** {usuario[6]}")
+    st.write(f"**Objetivo:** {usuario[7]}")
+    st.write(f"**Experiência:** {usuario[8]}")
+    
+    # Calcular IMC e TMB
+    imc = calcular_imc(usuario[4], usuario[5])
+    tmb = calcular_metabolismo_basal(usuario[4], usuario[5], usuario[3], usuario[6])
+    
+    # Exibindo IMC e TMB
+    st.write(f"**IMC:** {imc} ({situacao_imc(imc)})")
+    st.write(f"**Taxa de Metabolismo Basal (TMB):** {tmb} calorias/dia")
+    
+    # Gerando e exibindo o treino
     treino = gerar_treino(usuario)
-    st.write("Seu treino personalizado é:")
+    st.subheader("Ficha de Treino Personalizado:")
     st.write(treino)
+
+    # Botão para gerar PDF
+    if st.button("Gerar PDF"):
+        gerar_pdf(usuario, imc, tmb, treino)
+
+# Função para salvar PDF com as informações do usuário
+def gerar_pdf(usuario, imc, tmb, treino):
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Definindo o título do PDF
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, txt="Ficha de Treino Personalizada", ln=True, align="C")
+    pdf.ln(10)
+    
+    # Informações do usuário
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=f"Nome: {usuario[1]}", ln=True)
+    pdf.cell(200, 10, txt=f"Idade: {usuario[3]} anos", ln=True)
+    pdf.cell(200, 10, txt=f"Peso: {usuario[4]} kg", ln=True)
+    pdf.cell(200, 10, txt=f"Altura: {usuario[5]} m", ln=True)
+    pdf.cell(200, 10, txt=f"Gênero: {usuario[6]}", ln=True)
+    pdf.cell(200, 10, txt=f"Objetivo: {usuario[7]}", ln=True)
+    pdf.cell(200, 10, txt=f"Experiência: {usuario[8]}", ln=True)
+    
+    # IMC e TMB
+    pdf.cell(200, 10, txt=f"IMC: {imc} ({situacao_imc(imc)})", ln=True)
+    pdf.cell(200, 10, txt=f"TMB: {tmb} calorias/dia", ln=True)
+    
+    # Ficha de treino
+    pdf.ln(10)
+    pdf.multi_cell(200, 10, txt=f"Ficha de Treino:\n{treino}")
+    
+    # Salvar o PDF
+    pdf.output("ficha_treino.pdf")
+    st.success("PDF gerado com sucesso!")
+
+# Função para determinar a situação do IMC
+def situacao_imc(imc):
+    if imc < 18.5:
+        return "Abaixo do peso"
+    elif 18.5 <= imc <= 24.9:
+        return "Peso normal"
+    elif 25 <= imc <= 29.9:
+        return "Sobrepeso"
+    else:
+        return "Obesidade"
 
 # Interface de login
 def login():
@@ -120,38 +201,3 @@ def login():
     senha = st.text_input("Senha", type="password")
     if st.button("Login"):
         usuario = obter_usuario(nome, senha)
-        if usuario:
-            st.write(f"Bem-vindo de volta, {usuario[1]}!")
-            # Exibir treino personalizado
-            exibir_treino(usuario)
-        else:
-            st.error("Usuário ou senha incorretos!")
-
-# Interface de cadastro
-def cadastro():
-    nome = st.text_input("Nome")
-    senha = st.text_input("Senha", type="password")
-    idade = st.number_input("Idade", min_value=18, max_value=120)
-    peso = st.number_input("Peso (kg)", min_value=1.0)
-    altura = st.number_input("Altura (m)", min_value=1.0)
-    genero = st.selectbox("Gênero", ["masculino", "feminino"])
-    objetivo = st.text_input("Objetivo")
-    experiencia = st.selectbox("Experiência", ["iniciante", "intermediário", "avançado"])
-
-    if st.button("Cadastrar"):
-        cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia)
-        st.success(f"Usuário {nome} cadastrado com sucesso!")
-
-# Função principal
-def main():
-    st.title("App de Treino Personalizado")
-
-    opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
-
-    if opcao == "Login":
-        login()
-    elif opcao == "Cadastro":
-        cadastro()
-
-if __name__ == "__main__":
-    main()
