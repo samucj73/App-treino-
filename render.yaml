@@ -1,11 +1,16 @@
 services:
   - type: web
-    name: treino-personalizado-app
+    name: treino-app
     env: python
-    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "streamlit run app.py"
-    branch: main
     envVars:
-      - key: DATABASE_URL
-        fromDatabase: true
+      - key: DB_HOST
+        value: "dpg-d06oq3qli9vc73ejebbg-a"
+      - key: DB_NAME
+        value: "sal_6scc"
+      - key: DB_USER
+        value: "sal_6scc_user"
+      - key: DB_PASSWORD
+        value: "NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"
+    plan: free
