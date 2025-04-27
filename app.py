@@ -18,7 +18,6 @@ def criar_tabela():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
         criar_tabela_sql = """
         CREATE TABLE IF NOT EXISTS usuariosam (
             id SERIAL PRIMARY KEY,
@@ -34,7 +33,6 @@ def criar_tabela():
         """
         cursor.execute(criar_tabela_sql)
         conn.commit()
-
     except Exception as e:
         st.error(f"Ocorreu um erro ao criar a tabela: {e}")
     finally:
@@ -67,35 +65,129 @@ def obter_usuario(nome, senha):
     conn.close()
     return usuario
 
-# Função para gerar treino personalizado
+# Função para calcular IMC
+def calcular_imc(peso, altura):
+    imc = peso / (altura ** 2)
+    if imc < 18.5:
+        status = "Abaixo do peso"
+    elif 18.5 <= imc < 25:
+        status = "Peso normal"
+    elif 25 <= imc < 30:
+        status = "Sobrepeso"
+    else:
+        status = "Obesidade"
+    return imc, status
+
+# Função para calcular TMB
+def calcular_tmb(peso, altura, idade, genero):
+    altura_cm = altura * 100
+    if genero == "masculino":
+        tmb = 10 * peso + 6.25 * altura_cm - 5 * idade + 5
+    else:
+        tmb = 10 * peso + 6.25 * altura_cm - 5 * idade - 161
+    return tmb
+
+# Função para gerar treino
 def gerar_treino(usuario):
     idade = usuario[3]
     peso = usuario[4]
-    objetivo = usuario[7]
+    altura = usuario[5]
+    genero = usuario[6]
+    objetivo = usuario[7].lower()
     experiencia = usuario[8]
 
-    treino = ""
+    imc, status_imc = calcular_imc(peso, altura)
+    tmb = calcular_tmb(peso, altura, idade, genero)
 
-    if experiencia == "iniciante":
-        treino += "### Treino Iniciante\n"
-        treino += "- Agachamento (3x10)\n"
-        treino += "- Flexão de braço (3x10)\n"
-        treino += "- Remada unilateral (3x12 por lado)\n"
-    elif experiencia == "intermediário":
-        treino += "### Treino Intermediário\n"
-        treino += "- Agachamento com barra (4x8)\n"
-        treino += "- Supino reto (4x8)\n"
-        treino += "- Levantamento terra (4x8)\n"
-    elif experiencia == "avançado":
-        treino += "### Treino Avançado\n"
-        treino += "- Agachamento pesado (5x6)\n"
-        treino += "- Supino pesado (5x6)\n"
-        treino += "- Deadlift (5x6)\n"
+    treino = f"## Dados Físicos\n"
+    treino += f"- **Idade:** {idade} anos\n"
+    treino += f"- **Peso:** {peso:.1f} kg\n"
+    treino += f"- **Altura:** {altura:.2f} m\n"
+    treino += f"- **IMC:** {imc:.2f} ({status_imc})\n"
+    treino += f"- **TMB:** {tmb:.0f} kcal/dia\n"
+    treino += f"- **Objetivo:** {objetivo.capitalize()}\n"
+    treino += "---\n\n"
+
+    treino += "## Treino Semanal\n"
+
+    if objetivo == "emagrecimento":
+        treino += """
+**Treino A (Peito e Tríceps)**  
+- Supino reto com halteres (3x15)  
+- Crossover no cabo (3x20)  
+- Tríceps corda (3x20)  
+
+**Treino B (Costas e Bíceps)**  
+- Puxada frente aberta (3x15)  
+- Remada baixa (3x15)  
+- Rosca direta (3x20)  
+
+**Treino C (Pernas e Abdômen)**  
+- Agachamento livre (3x15)  
+- Leg press (3x20)  
+- Abdominal prancha (3x30s)  
+
+**Treino D (Ombros)**  
+- Desenvolvimento com halteres (3x15)  
+- Elevação lateral (3x20)  
+
+**Treino E (Cardio/Funcional)**  
+- Corrida/caminhada (30 minutos)  
+- Circuito funcional (20 minutos)  
+"""
+    elif objetivo == "hipertrofia":
+        treino += """
+**Treino A (Peito e Tríceps)**  
+- Supino reto barra (4x8)  
+- Supino inclinado halteres (4x10)  
+- Tríceps francês (4x12)  
+
+**Treino B (Costas e Bíceps)**  
+- Barra fixa assistida (4x8)  
+- Remada unilateral (4x10)  
+- Rosca alternada (4x12)  
+
+**Treino C (Pernas e Abdômen)**  
+- Agachamento livre (4x8)  
+- Leg press (4x10)  
+- Stiff (4x10)  
+- Abdominal infra solo (3x20)  
+
+**Treino D (Ombro e Trapézio)**  
+- Desenvolvimento militar (4x8)  
+- Elevação frontal (4x10)  
+- Encolhimento trapézio (4x12)  
+
+**Treino E (Cardio leve)**  
+- Bicicleta ergométrica (20 minutos)  
+"""
+    else:  # resistência
+        treino += """
+**Treino A (Peito e Tríceps)**  
+- Supino máquina (3x20)  
+- Crossover leve (3x20)  
+- Tríceps pulley (3x25)  
+
+**Treino B (Costas e Bíceps)**  
+- Puxada frente leve (3x20)  
+- Remada máquina (3x20)  
+- Rosca martelo (3x25)  
+
+**Treino C (Pernas e Abdômen)**  
+- Cadeira extensora (3x20)  
+- Mesa flexora (3x20)  
+- Abdominal oblíquo (3x30)  
+
+**Treino D (Ombro e Core)**  
+- Elevação lateral leve (3x20)  
+- Prancha isométrica (3x30s)  
+
+**Treino E (Cardio longo)**  
+- Caminhada intensa (40 minutos)  
+"""
 
     treino += "\n---\n"
-    treino += f"**Idade:** {idade} anos\n\n"
-    treino += f"**Peso:** {peso:.1f} kg\n\n"
-    treino += f"**Objetivo:** {objetivo}\n\n"
+    treino += "_Recomendamos avaliação médica antes de iniciar atividades físicas._"
 
     return treino
 
@@ -103,9 +195,6 @@ def gerar_treino(usuario):
 def exibir_treino(usuario):
     treino = gerar_treino(usuario)
     st.markdown(treino)
-
-    if st.button("Exportar treino para PDF (em breve)"):
-        st.info("Função de exportação em PDF ainda não implementada.")
 
 # Interface de login
 def login():
@@ -118,7 +207,7 @@ def login():
         if usuario:
             st.session_state['usuario'] = usuario
             st.success(f"Bem-vindo(a), {usuario[1]}!")
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Nome ou senha inválidos!")
 
@@ -131,7 +220,7 @@ def cadastro():
     peso = st.number_input("Peso (kg)", min_value=1.0, key="cad_peso")
     altura = st.number_input("Altura (m)", min_value=1.0, key="cad_altura")
     genero = st.selectbox("Gênero", ["masculino", "feminino"], key="cad_genero")
-    objetivo = st.text_input("Objetivo", key="cad_objetivo")
+    objetivo = st.selectbox("Objetivo", ["emagrecimento", "hipertrofia", "resistência"], key="cad_objetivo")
     experiencia = st.selectbox("Experiência", ["iniciante", "intermediário", "avançado"], key="cad_experiencia")
 
     if st.button("Cadastrar"):
@@ -149,7 +238,7 @@ def main():
         st.sidebar.success(f"Logado como: {st.session_state['usuario'][1]}")
         if st.sidebar.button("Sair"):
             del st.session_state['usuario']
-            st.rerun()
+            st.experimental_rerun()
 
         st.subheader("Seu Treino Personalizado")
         exibir_treino(st.session_state['usuario'])
