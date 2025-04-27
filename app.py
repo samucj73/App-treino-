@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import psycopg2
 from psycopg2 import sql
-from fpdf import FPDF
+import matplotlib.pyplot as plt
 
 # Função para conectar ao banco de dados PostgreSQL
 def get_db_connection():
@@ -21,37 +21,26 @@ def criar_tabela():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Verifique se a tabela "usuarios" já existe
-        cursor.execute("""
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'usuarios'
+        # Criar a tabela se ela não existir
+        criar_tabela_sql = """
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id SERIAL PRIMARY KEY,
+            nome VARCHAR(100),
+            senha VARCHAR(100),
+            idade INT,
+            peso FLOAT,
+            altura FLOAT,
+            genero VARCHAR(10),
+            objetivo VARCHAR(100),
+            experiencia VARCHAR(20)
         );
-        """)
+        """
+        cursor.execute(criar_tabela_sql)
+        conn.commit()
+        print("Tabela criada com sucesso!")
 
-        # Se a tabela não existir, crie-a
-        if not cursor.fetchone()[0]:
-            criar_tabela_sql = """
-            CREATE TABLE usuarios (
-                id SERIAL PRIMARY KEY,
-                nome VARCHAR(100),
-                senha VARCHAR(100),
-                idade INT,
-                peso FLOAT,
-                altura FLOAT,
-                genero VARCHAR(10),
-                objetivo VARCHAR(100),
-                experiencia VARCHAR(20)
-            );
-            """
-            cursor.execute(criar_tabela_sql)
-            conn.commit()
-            print("Tabela criada com sucesso!")
-        else:
-            print("Tabela já existe, não será recriada.")
-        
     except Exception as e:
-        print(f"Ocorreu um erro: {e}")
+        print(f"Ocorreu um erro ao criar a tabela: {e}")
         
     finally:
         cursor.close()
@@ -117,54 +106,9 @@ def situacao_imc(imc):
 
 # Função para criar o treino personalizado
 def gerar_treino(usuario):
-    treino = {
-        "Segunda-feira": [
-            {"exercicio": "Supino Reto", "series_repeticoes": "4x10-12", "equipamento": "Barra e banco reto"},
-            {"exercicio": "Supino Inclinado com Halteres", "series_repeticoes": "4x8-10", "equipamento": "Halteres e banco inclinado"},
-            {"exercicio": "Crossover", "series_repeticoes": "3x12-15", "equipamento": "Cabo e polia"}
-        ],
-        "Terça-feira": [
-            {"exercicio": "Puxada na Barra Fixa", "series_repeticoes": "4x6-8", "equipamento": "Barra fixa"},
-            {"exercicio": "Remada Unilateral com Halteres", "series_repeticoes": "4x10-12", "equipamento": "Halteres e banco inclinado"},
-            {"exercicio": "Rosca Direta com Barra", "series_repeticoes": "3x10-12", "equipamento": "Barra reta"}
-        ]
-        # Adicionar mais dias com exercícios
-    }
+    # Lógica de treino baseada nas informações do usuário
+    treino = "Treino personalizado baseado nos dados do usuário"
     return treino
-
-# Função para gerar o PDF da ficha de treino
-def gerar_pdf_ficha(usuario, treino):
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-
-    # Adicionar título
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, "Ficha de Treino Personalizado", ln=True, align="C")
-
-    # Dados do usuário
-    pdf.set_font("Arial", "", 12)
-    pdf.ln(10)
-    pdf.cell(200, 10, f"Usuário: {usuario[1]}", ln=True)
-    pdf.cell(200, 10, f"Idade: {usuario[2]}", ln=True)
-    pdf.cell(200, 10, f"Objetivo: {usuario[6]}", ln=True)
-    pdf.cell(200, 10, f"Nível: {usuario[7]}", ln=True)
-
-    pdf.ln(10)
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(200, 10, "Treino Semanal", ln=True)
-
-    # Ficha de treino
-    pdf.set_font("Arial", "", 12)
-    for dia, exercicios in treino.items():
-        pdf.ln(5)
-        pdf.cell(200, 10, f"{dia}:", ln=True)
-        for exercicio in exercicios:
-            pdf.cell(200, 10, f"{exercicio['exercicio']} - Séries: {exercicio['series_repeticoes']} - Equipamento: {exercicio['equipamento']}", ln=True)
-
-    # Salvar PDF
-    pdf.output(f"treino_{usuario[1]}.pdf")
-    return f"treino_{usuario[1]}.pdf"
 
 # Interface de login
 def login():
@@ -177,10 +121,6 @@ def login():
             # Gerar treino
             treino = gerar_treino(usuario)
             st.write(treino)
-            
-            # Gerar e disponibilizar o PDF
-            pdf_path = gerar_pdf_ficha(usuario, treino)
-            st.download_button("Baixar Ficha de Treino", data=open(pdf_path, "rb").read(), file_name=f"treino_{usuario[1]}.pdf", mime="application/pdf")
         else:
             st.error("Usuário ou senha incorretos!")
 
