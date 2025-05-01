@@ -1,4 +1,4 @@
-oimport psycopg2
+import psycopg2
 from psycopg2 import sql
 
 # Nome da tabela
