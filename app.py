@@ -2,7 +2,7 @@ import streamlit as st
 st.set_page_config(page_title="Personal Trainer App", page_icon=":muscle:", layout="centered")
 
 from usuario import cadastrar, obter, atualizar, recuperar_por_email
-from email import enviar_email_recuperacao
+from email_utils import enviar_email_recuperacao
 from treino import gerar_treino
 from calculos import (
     calcular_imc,
