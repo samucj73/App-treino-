@@ -14,10 +14,54 @@ from calculos import (
     recomendacao_proteina
 )
 
+# Dados fixos de grupos musculares
+grupos_musculares = {
+    "Peito": ["Supino reto", "Supino inclinado", "Crucifixo", "Crossover", "Peck deck"],
+    "Costas": ["Puxada frente", "Remada curvada", "Remada baixa", "Pulldown", "Levantamento terra"],
+    "Perna": ["Agachamento", "Leg press", "Cadeira extensora", "Mesa flexora", "Stiff"],
+    "Ombro": ["Desenvolvimento militar", "Elevação lateral", "Arnold press", "Crucifixo inverso"],
+    "Bíceps": ["Rosca direta", "Rosca alternada", "Rosca martelo"],
+    "Tríceps": ["Tríceps corda", "Tríceps francês", "Tríceps banco"],
+    "Abdômen": ["Prancha", "Crunch", "Elevação de pernas", "Bicicleta"],
+}
+
 def splash_screen():
     st.markdown("<h1 style='text-align: center;'>Personal Trainer App</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Seu treino, suas metas, sua evolução!</p>", unsafe_allow_html=True)
     st.markdown("---")
+
+# Função nova: Geração personalizada de treino
+def montar_treino_personalizado():
+    st.title("Montar Meu Treino")
+
+    grupos_escolhidos = st.multiselect("Selecione os grupos musculares", list(grupos_musculares.keys()))
+    dias = st.slider("Quantos dias de treino por semana?", 1, 7, 3)
+    volume = st.slider("Volume (exercícios por grupo)", 1, 5, 3)
+    intensidade = st.selectbox("Intensidade", ["Baixa (2x15)", "Média (3x12)", "Alta (4x8)"])
+
+    if intensidade == "Baixa (2x15)":
+        series, reps = 2, "15"
+    elif intensidade == "Média (3x12)":
+        series, reps = 3, "12"
+    else:
+        series, reps = 4, "8"
+
+    if st.button("Gerar Treino"):
+        if not grupos_escolhidos:
+            st.warning("Selecione ao menos um grupo muscular.")
+            return
+
+        treino = {}
+        for i in range(dias):
+            grupo = grupos_escolhidos[i % len(grupos_escolhidos)]
+            exercicios = grupos_musculares[grupo][:volume]
+            treino[f"Dia {i + 1} - {grupo}"] = [f"{ex} - {series}x{reps}" for ex in exercicios]
+
+        st.success("Treino personalizado gerado!")
+        for dia, exercicios in treino.items():
+            with st.expander(dia):
+                for ex in exercicios:
+                    st.write(f"- {ex}")
 
 def cadastro():
     st.subheader("Cadastro de Novo Usuário")
@@ -86,7 +130,7 @@ def exibir_treino():
         st.stop()
 
     usuario = st.session_state['usuario']
-    
+
     campos_obrigatorios = ['nome', 'idade', 'peso', 'altura', 'genero', 'objetivo', 'experiencia', 'dias_treino']
     if any(campo not in usuario for campo in campos_obrigatorios):
         st.error("Dados do usuário estão incompletos. Faça login novamente.")
@@ -94,7 +138,7 @@ def exibir_treino():
 
     st.title(f"Treino de {usuario['nome']}")
 
-    tabs = st.tabs(["📋 Perfil", "🏋️ Treino", "⚙️ Configurações", "📊 Análises Corporais"])
+    tabs = st.tabs(["📋 Perfil", "🏋️ Treino", "⚙️ Configurações", "📊 Análises Corporais", "🛠️ Montar Meu Treino"])
 
     with tabs[0]:
         st.subheader("Informações do Usuário")
@@ -172,26 +216,8 @@ def exibir_treino():
         else:
             st.info("Informe a circunferência da cintura para visualizar as análises completas.")
 
-def preencher_dados_usuario():
-    st.title("Complete seu Perfil")
-
-    if 'usuario' not in st.session_state:
-        st.error("Sessão expirada. Faça login novamente.")
-        st.stop()
-
-    usuario = st.session_state['usuario']
-
-    with st.form("form_completar_perfil"):
-        idade = st.number_input("Idade", min_value=10, max_value=100, step=1)
-        peso = st.number_input("Peso (kg)", min_value=30.0, max_value=300.0, step=0.1)
-        altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, step=0.01)
-        genero = st.radio("Gênero", ("Masculino", "Feminino"))
-        objetivo = st.selectbox("Objetivo", ["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"])
-
-        if st.form_submit_button("Salvar"):
-            atualizar(usuario['id'], usuario['nome'], idade, peso, altura, genero, objetivo, usuario['experiencia'], usuario['dias_treino'])
-            st.success("Perfil atualizado com sucesso!")
-            st.rerun()
+    with tabs[4]:
+        montar_treino_personalizado()
 
 # BLOCO PRINCIPAL
 if __name__ == "__main__":
