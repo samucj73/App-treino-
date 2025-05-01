@@ -1,4 +1,4 @@
-import psycopg2
+oimport psycopg2
 from psycopg2 import sql
 
 # Nome da tabela
@@ -127,6 +127,35 @@ def recuperar_por_email(email):
         return cursor.fetchone()
     except Exception as e:
         raise Exception(f"Erro ao recuperar por email: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+# Obter usuário por nome ou email e senha — retornando dicionário
+def obter_usuario(nome_ou_email, senha):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql.SQL("""
+            SELECT id, nome, email, senha, idade, peso, altura, genero, objetivo, experiencia, dias_treino
+            FROM {table}
+            WHERE (nome = %s OR email = %s) AND senha = %s
+        """).format(table=sql.Identifier(NOME_TABELA)), (nome_ou_email, nome_ou_email, senha))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "id": row[0],
+                "nome": row[1],
+                "email": row[2],
+                "senha": row[3],
+                "idade": row[4],
+                "peso": row[5],
+                "altura": row[6],
+                "genero": row[7],
+                "objetivo": row[8],
+                "experiencia": row[9],
+                "dias_treino": row[10],
+            }
+        return None
     finally:
         cursor.close()
         conn.close()
