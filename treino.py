@@ -16,9 +16,9 @@ usuario = {
 # Exercícios por grupo
 grupos_musculares = {
     "Peito": ["Supino reto", "Supino inclinado", "Crucifixo", "Crossover", "Peck deck"],
-    "Costas": ["Puxada frente", "Remada curvada", "Remada baixa", "Pulldown", "Levantamento terra"],
-    "Perna": ["Agachamento", "Leg press", "Cadeira extensora", "Mesa flexora", "Stiff"],
-    "Ombro": ["Desenvolvimento militar", "Elevação lateral", "Arnold press", "Crucifixo inverso"],
+    "Costas": ["Puxada frente aberta", "Remada curvada", "puxada frente fechada", "Remada baixa", "Pulldown", "Levantamento terra"],
+    "Perna": ["Agachamento", "Leg press", "Cadeira extensora", "Mesa flexora", "Stiff", "Cadeira adutora", "Cadeira abdusora", "Agachamento bulgaro", "Afundo"],
+    "Ombro": ["Desenvolvimento militar", "Elevação lateral", "Arnold press", "Elevacao frontal", "Crucifixo inverso"],
     "Bíceps": ["Rosca direta", "Rosca alternada", "Rosca martelo"],
     "Tríceps": ["Tríceps corda", "Tríceps francês", "Tríceps banco"],
     "Abdômen": ["Prancha", "Crunch", "Elevação de pernas", "Bicicleta"],
