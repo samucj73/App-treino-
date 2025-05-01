@@ -1,253 +1,207 @@
 import streamlit as st
-import pandas as pd
-import psycopg2
-from psycopg2 import sql
+st.set_page_config(page_title="Personal Trainer App", page_icon=":muscle:", layout="centered")
 
-# Função para conectar ao banco de dados
-def get_db_connection():
-    conn = psycopg2.connect(
-        host="dpg-d06oq3qli9vc73ejebbg-a",
-        database="sal_6scc",
-        user="sal_6scc_user",
-        password="NT5pmK5SWCB0voVzFqRkofj8YVKjL3Q1"
-    )
-    return conn
+from usuario import cadastrar, obter, atualizar, recuperar_por_email
+from email import enviar_email_recuperacao
+from treino import gerar_treino
+from calculos import (
+    calcular_imc,
+    calcular_tmb,
+    calcular_percentual_gordura,
+    calcular_massa_muscular,
+    calcular_idade_metabolica,
+    recomendacao_hidratacao,
+    recomendacao_proteina
+)
 
-# Função para criar a tabela no banco de dados
-def criar_tabela():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        criar_tabela_sql = """
-        CREATE TABLE IF NOT EXISTS usuariosam (
-            id SERIAL PRIMARY KEY,
-            nome VARCHAR(100),
-            senha VARCHAR(100),
-            idade INT,
-            peso FLOAT,
-            altura FLOAT,
-            genero VARCHAR(10),
-            objetivo VARCHAR(100),
-            experiencia VARCHAR(20)
-        );
-        """
-        cursor.execute(criar_tabela_sql)
-        conn.commit()
-    except Exception as e:
-        st.error(f"Ocorreu um erro ao criar a tabela: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+def splash_screen():
+    st.markdown("<h1 style='text-align: center;'>Personal Trainer App</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Seu treino, suas metas, sua evolução!</p>", unsafe_allow_html=True)
+    st.markdown("---")
 
-criar_tabela()
+def cadastro():
+    st.subheader("Cadastro de Novo Usuário")
+    with st.form("cadastro_form"):
+        nome = st.text_input("Nome de usuário")
+        email = st.text_input("E-mail")
+        senha = st.text_input("Senha", type="password")
+        idade = st.number_input("Idade", min_value=10, max_value=100, step=1)
+        peso = st.number_input("Peso (kg)", min_value=30.0, max_value=300.0, step=0.1)
+        altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, step=0.01)
+        genero = st.radio("Gênero", ("Masculino", "Feminino"))
+        objetivo = st.selectbox("Objetivo", ["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"])
+        experiencia = st.selectbox("Nível de experiência", ["Iniciante", "Intermediário", "Avançado"])
+        dias_treino = st.slider("Dias de treino na semana", 1, 7, 3)
 
-# Função para cadastrar usuário
-def cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    insert_query = sql.SQL("""
-        INSERT INTO usuariosam (nome, senha, idade, peso, altura, genero, objetivo, experiencia)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """)
-    cursor.execute(insert_query, (nome, senha, idade, peso, altura, genero, objetivo, experiencia))
-    conn.commit()
-    cursor.close()
-    conn.close()
+        submitted = st.form_submit_button("Cadastrar")
+        if submitted:
+            try:
+                cadastrar(nome, email, senha, idade, peso, altura, genero, objetivo, experiencia, dias_treino)
+                st.success("Usuário cadastrado com sucesso!")
+                st.balloons()
+            except Exception as e:
+                st.error(str(e))
 
-# Função para buscar usuário
-def obter_usuario(nome, senha):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    select_query = sql.SQL("SELECT * FROM usuariosam WHERE nome = %s AND senha = %s")
-    cursor.execute(select_query, (nome, senha))
-    usuario = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return usuario
-
-# Função para calcular IMC
-def calcular_imc(peso, altura):
-    imc = peso / (altura ** 2)
-    if imc < 18.5:
-        status = "Abaixo do peso"
-    elif 18.5 <= imc < 25:
-        status = "Peso normal"
-    elif 25 <= imc < 30:
-        status = "Sobrepeso"
-    else:
-        status = "Obesidade"
-    return imc, status
-
-# Função para calcular TMB
-def calcular_tmb(peso, altura, idade, genero):
-    altura_cm = altura * 100
-    if genero == "masculino":
-        tmb = 10 * peso + 6.25 * altura_cm - 5 * idade + 5
-    else:
-        tmb = 10 * peso + 6.25 * altura_cm - 5 * idade - 161
-    return tmb
-
-# Função para gerar treino
-def gerar_treino(usuario):
-    idade = usuario[3]
-    peso = usuario[4]
-    altura = usuario[5]
-    genero = usuario[6]
-    objetivo = usuario[7].lower()
-    experiencia = usuario[8]
-
-    imc, status_imc = calcular_imc(peso, altura)
-    tmb = calcular_tmb(peso, altura, idade, genero)
-
-    treino = f"## Dados Físicos\n"
-    treino += f"- **Idade:** {idade} anos\n"
-    treino += f"- **Peso:** {peso:.1f} kg\n"
-    treino += f"- **Altura:** {altura:.2f} m\n"
-    treino += f"- **IMC:** {imc:.2f} ({status_imc})\n"
-    treino += f"- **TMB:** {tmb:.0f} kcal/dia\n"
-    treino += f"- **Objetivo:** {objetivo.capitalize()}\n"
-    treino += "---\n\n"
-
-    treino += "## Treino Semanal\n"
-
-    if objetivo == "emagrecimento":
-        treino += """
-**Treino A (Peito e Tríceps)**  
-- Supino reto com halteres (3x15)  
-- Crossover no cabo (3x20)  
-- Tríceps corda (3x20)  
-
-**Treino B (Costas e Bíceps)**  
-- Puxada frente aberta (3x15)  
-- Remada baixa (3x15)  
-- Rosca direta (3x20)  
-
-**Treino C (Pernas e Abdômen)**  
-- Agachamento livre (3x15)  
-- Leg press (3x20)  
-- Abdominal prancha (3x30s)  
-
-**Treino D (Ombros)**  
-- Desenvolvimento com halteres (3x15)  
-- Elevação lateral (3x20)  
-
-**Treino E (Cardio/Funcional)**  
-- Corrida/caminhada (30 minutos)  
-- Circuito funcional (20 minutos)  
-"""
-    elif objetivo == "hipertrofia":
-        treino += """
-**Treino A (Peito e Tríceps)**  
-- Supino reto barra (4x8)  
-- Supino inclinado halteres (4x10)  
-- Tríceps francês (4x12)  
-
-**Treino B (Costas e Bíceps)**  
-- Barra fixa assistida (4x8)  
-- Remada unilateral (4x10)  
-- Rosca alternada (4x12)  
-
-**Treino C (Pernas e Abdômen)**  
-- Agachamento livre (4x8)  
-- Leg press (4x10)  
-- Stiff (4x10)  
-- Abdominal infra solo (3x20)  
-
-**Treino D (Ombro e Trapézio)**  
-- Desenvolvimento militar (4x8)  
-- Elevação frontal (4x10)  
-- Encolhimento trapézio (4x12)  
-
-**Treino E (Cardio leve)**  
-- Bicicleta ergométrica (20 minutos)  
-"""
-    else:  # resistência
-        treino += """
-**Treino A (Peito e Tríceps)**  
-- Supino máquina (3x20)  
-- Crossover leve (3x20)  
-- Tríceps pulley (3x25)  
-
-**Treino B (Costas e Bíceps)**  
-- Puxada frente leve (3x20)  
-- Remada máquina (3x20)  
-- Rosca martelo (3x25)  
-
-**Treino C (Pernas e Abdômen)**  
-- Cadeira extensora (3x20)  
-- Mesa flexora (3x20)  
-- Abdominal oblíquo (3x30)  
-
-**Treino D (Ombro e Core)**  
-- Elevação lateral leve (3x20)  
-- Prancha isométrica (3x30s)  
-
-**Treino E (Cardio longo)**  
-- Caminhada intensa (40 minutos)  
-"""
-
-    treino += "\n---\n"
-    treino += "_Recomendamos avaliação médica antes de iniciar atividades físicas._"
-
-    return treino
-
-# Exibir treino
-def exibir_treino(usuario):
-    treino = gerar_treino(usuario)
-    st.markdown(treino)
-
-# Interface de login
 def login():
     st.subheader("Login")
-    nome = st.text_input("Nome")
-    senha = st.text_input("Senha", type="password")
+    with st.form("login_form"):
+        nome = st.text_input("Nome de usuário")
+        senha = st.text_input("Senha", type="password")
+        submitted = st.form_submit_button("Entrar")
 
-    if st.button("Entrar"):
-        usuario = obter_usuario(nome, senha)
-        if usuario:
-            st.session_state['usuario'] = usuario
-            st.success(f"Bem-vindo(a), {usuario[1]}!")
-            st.experimental_rerun()
+        if submitted:
+            usuario = obter(nome, senha)
+            if usuario:
+                st.session_state['usuario'] = usuario
+                st.toast(f"Bem-vindo(a), {usuario['nome']}!", icon="🎉")
+                st.rerun()
+            else:
+                st.error("Nome de usuário ou senha incorretos.")
+
+    if st.button("Esqueceu a senha?"):
+        recuperar_senha_form()
+
+def recuperar_senha_form():
+    st.subheader("Recuperação de Senha")
+    email = st.text_input("Digite seu e-mail cadastrado")
+
+    if st.button("Recuperar Senha"):
+        if email:
+            try:
+                usuario = recuperar_por_email(email)
+                if usuario:
+                    senha_usuario = usuario['senha']
+                    enviar_email_recuperacao(email, senha_usuario)
+                    st.success("E-mail de recuperação enviado!")
+                else:
+                    st.error("E-mail não encontrado!")
+            except Exception as e:
+                st.error(f"Erro ao tentar recuperar a senha: {e}")
         else:
-            st.error("Nome ou senha inválidos!")
+            st.error("Por favor, insira um e-mail válido.")
 
-# Interface de cadastro
-def cadastro():
-    st.subheader("Cadastro")
-    nome = st.text_input("Nome", key="cad_nome")
-    senha = st.text_input("Senha", type="password", key="cad_senha")
-    idade = st.number_input("Idade", min_value=18, max_value=120, key="cad_idade")
-    peso = st.number_input("Peso (kg)", min_value=1.0, key="cad_peso")
-    altura = st.number_input("Altura (m)", min_value=1.0, key="cad_altura")
-    genero = st.selectbox("Gênero", ["masculino", "feminino"], key="cad_genero")
-    objetivo = st.selectbox("Objetivo", ["emagrecimento", "hipertrofia", "resistência"], key="cad_objetivo")
-    experiencia = st.selectbox("Experiência", ["iniciante", "intermediário", "avançado"], key="cad_experiencia")
+def exibir_treino():
+    if 'usuario' not in st.session_state:
+        st.error("Usuário não encontrado na sessão. Faça login novamente.")
+        st.stop()
 
-    if st.button("Cadastrar"):
-        cadastrar_usuario(nome, senha, idade, peso, altura, genero, objetivo, experiencia)
-        st.success(f"Usuário {nome} cadastrado com sucesso!")
-        st.info("Agora faça login para acessar seu treino.")
+    usuario = st.session_state['usuario']
+    
+    campos_obrigatorios = ['nome', 'idade', 'peso', 'altura', 'genero', 'objetivo', 'experiencia', 'dias_treino']
+    if any(campo not in usuario for campo in campos_obrigatorios):
+        st.error("Dados do usuário estão incompletos. Faça login novamente.")
+        st.stop()
 
-# Função principal
-def main():
-    st.title("🏋️‍♂️ App de Treino Personalizado")
+    st.title(f"Treino de {usuario['nome']}")
 
-    menu = st.sidebar.selectbox("Menu", ["Login", "Cadastro"])
+    tabs = st.tabs(["📋 Perfil", "🏋️ Treino", "⚙️ Configurações", "📊 Análises Corporais"])
 
-    if 'usuario' in st.session_state:
-        st.sidebar.success(f"Logado como: {st.session_state['usuario'][1]}")
-        if st.sidebar.button("Sair"):
+    with tabs[0]:
+        st.subheader("Informações do Usuário")
+        st.write(f"**Idade:** {usuario['idade']} anos")
+        st.write(f"**Peso:** {usuario['peso']} kg")
+        st.write(f"**Altura:** {usuario['altura']} m")
+        st.write(f"**Gênero:** {usuario['genero']}")
+        st.write(f"**Objetivo:** {usuario['objetivo']}")
+        st.write(f"**Experiência:** {usuario['experiencia']}")
+        st.write(f"**Dias de treino por semana:** {usuario['dias_treino']}")
+
+    with tabs[1]:
+        st.subheader("Plano de Treino")
+        treino = gerar_treino(usuario['objetivo'], usuario['experiencia'], usuario['dias_treino'])
+
+        progress = st.progress(0)
+        for i in range(100):
+            progress.progress(i + 1)
+        st.success("Treino carregado!")
+
+        for dia, exercicios in treino.items():
+            with st.expander(dia):
+                for exercicio in exercicios:
+                    st.write(f"- {exercicio}")
+
+    with tabs[2]:
+        st.subheader("Atualizar Dados")
+        with st.form("form_atualizar"):
+            nome = st.text_input("Nome", value=usuario['nome'])
+            idade = st.number_input("Idade", min_value=10, max_value=100, value=usuario['idade'], step=1)
+            peso = st.number_input("Peso (kg)", min_value=30.0, max_value=300.0, value=usuario['peso'], step=0.1)
+            altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, value=usuario['altura'], step=0.01)
+            genero = st.radio("Gênero", ("Masculino", "Feminino"), index=0 if usuario['genero'] == "Masculino" else 1)
+            objetivo = st.selectbox("Objetivo", ["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"], index=["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"].index(usuario['objetivo']))
+            experiencia = st.selectbox("Experiência", ["Iniciante", "Intermediário", "Avançado"], index=["Iniciante", "Intermediário", "Avançado"].index(usuario['experiencia']))
+            dias_treino = st.slider("Dias de treino por semana", 1, 7, value=usuario['dias_treino'])
+
+            if st.form_submit_button("Salvar"):
+                atualizar(usuario['id'], nome, idade, peso, altura, genero, objetivo, experiencia, dias_treino)
+                st.success("Dados atualizados! Atualize a página para ver as mudanças.")
+                st.rerun()
+
+        if st.button("Sair da Conta"):
             del st.session_state['usuario']
-            st.experimental_rerun()
+            st.success("Sessão encerrada!")
+            st.rerun()
 
-        st.subheader("Seu Treino Personalizado")
-        exibir_treino(st.session_state['usuario'])
+    with tabs[3]:
+        st.subheader("Relatório Corporal")
 
-    else:
-        if menu == "Login":
-            login()
-        elif menu == "Cadastro":
-            cadastro()
+        peso = usuario['peso']
+        altura = usuario['altura']
+        idade = usuario['idade']
+        genero = usuario['genero']
+        objetivo = usuario['objetivo']
 
+        circunferencia = st.number_input("Informe sua circunferência da cintura (cm)", min_value=30.0, max_value=200.0, step=0.1)
+
+        if circunferencia:
+            imc, faixa_imc = calcular_imc(peso, altura)
+            tmb = calcular_tmb(idade, peso, altura, genero)
+            gordura = calcular_percentual_gordura(peso, circunferencia, idade, genero)
+            massa_magra = calcular_massa_muscular(peso, gordura)
+            idade_metabolica = calcular_idade_metabolica(tmb, idade)
+            agua = recomendacao_hidratacao(peso)
+            proteina = recomendacao_proteina(peso, objetivo)
+
+            st.markdown(f"**IMC:** {imc:.2f} ({faixa_imc})")
+            st.markdown(f"**TMB (Taxa Metabólica Basal):** {tmb:.2f} kcal/dia")
+            st.markdown(f"**Percentual de Gordura Estimado:** {gordura:.2f}%")
+            st.markdown(f"**Massa Muscular Estimada:** {massa_magra:.2f} kg")
+            st.markdown(f"**Idade Metabólica Estimada:** {idade_metabolica:.0f} anos")
+            st.markdown(f"**Hidratação Recomendada:** {agua:.0f} ml por dia")
+            st.markdown(f"**Proteína Diária Recomendada:** {proteina:.2f} g")
+        else:
+            st.info("Informe a circunferência da cintura para visualizar as análises completas.")
+
+def preencher_dados_usuario():
+    st.title("Complete seu Perfil")
+
+    if 'usuario' not in st.session_state:
+        st.error("Sessão expirada. Faça login novamente.")
+        st.stop()
+
+    usuario = st.session_state['usuario']
+
+    with st.form("form_completar_perfil"):
+        idade = st.number_input("Idade", min_value=10, max_value=100, step=1)
+        peso = st.number_input("Peso (kg)", min_value=30.0, max_value=300.0, step=0.1)
+        altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, step=0.01)
+        genero = st.radio("Gênero", ("Masculino", "Feminino"))
+        objetivo = st.selectbox("Objetivo", ["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"])
+
+        if st.form_submit_button("Salvar"):
+            atualizar(usuario['id'], usuario['nome'], idade, peso, altura, genero, objetivo, usuario['experiencia'], usuario['dias_treino'])
+            st.success("Perfil atualizado com sucesso!")
+            st.rerun()
+
+# BLOCO PRINCIPAL
 if __name__ == "__main__":
-    main()
+    if 'usuario' in st.session_state:
+        exibir_treino()
+    else:
+        splash_screen()
+        st.markdown("<h1 style='text-align: center;'>🏋️🏋️‍♀️</h1>", unsafe_allow_html=True)
+        opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
+        if opcao == "Login":
+            login()
+        else:
+            cadastro()
