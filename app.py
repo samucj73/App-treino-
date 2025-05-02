@@ -73,7 +73,7 @@ def cadastro():
         peso = st.number_input("Peso (kg)", min_value=30.0, max_value=300.0, step=0.1)
         altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, step=0.01)
         genero = st.radio("Gênero", ("Masculino", "Feminino"))
-        objetivo = st.selectbox("Objetivo", ["Perda de peso", "Ganhar massa muscular", "Melhorar resistência"])
+        objetivo = st.selectbox("Objetivo", ["Emagrecimento", "Hipertrofia", "Resistencia"])
         experiencia = st.selectbox("Nível de experiência", ["Iniciante", "Intermediário", "Avançado"])
         dias_treino = st.slider("Dias de treino na semana", 1, 7, 3)
 
