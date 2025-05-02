@@ -13,36 +13,52 @@ usuario = {
     "dias_treino": 4
 }
 
-# Exercícios por grupo
-grupos_musculares = {
-    "Peito": ["Supino reto", "Supino inclinado", "Crucifixo", "Crossover", "Peck deck"],
-    "Costas": ["Puxada frente aberta", "Remada curvada", "puxada frente fechada", "Remada baixa", "Pulldown", "Levantamento terra"],
-    "Perna": ["Agachamento", "Leg press", "Cadeira extensora", "Mesa flexora", "Stiff", "Cadeira adutora", "Cadeira abdusora", "Agachamento bulgaro", "Afundo"],
-    "Ombro": ["Desenvolvimento militar", "Elevação lateral", "Arnold press", "Elevacao frontal", "Crucifixo inverso"],
-    "Bíceps": ["Rosca direta", "Rosca alternada", "Rosca martelo"],
-    "Tríceps": ["Tríceps corda", "Tríceps francês", "Tríceps banco"],
-    "Abdômen": ["Prancha", "Crunch", "Elevação de pernas", "Bicicleta"],
+# Exercícios por grupo e objetivo
+exercicios = {
+    "Peito": {
+        "hipertrofia": [("Supino reto", "4x8-12"), ("Supino inclinado", "4x8-12"), ("Crucifixo", "4x8-12"), ("Crossover", "4x8-12")],
+        "emagrecimento": [("Supino reto", "3x15-20"), ("Supino inclinado", "3x15-20"), ("Crossover", "3x15-20")],
+        "resistencia": [("Peck deck", "3x10-15"), ("Supino reto", "3x10-15")]
+    },
+    "Costas": {
+        "hipertrofia": [("Puxada frente aberta", "4x8-12"), ("Remada curvada", "4x8-12"), ("Levantamento terra", "4x8-12")],
+        "emagrecimento": [("Pulldown", "3x15-20"), ("Puxada frente aberta", "3x15-20")],
+        "resistencia": [("Remada baixa", "3x10-15"), ("Levantamento terra", "3x10-15")]
+    },
+    "Perna": {
+        "hipertrofia": [("Agachamento", "4x8-12"), ("Leg press", "4x8-12"), ("Cadeira extensora", "4x8-12")],
+        "emagrecimento": [("Cadeira adutora", "3x15-20"), ("Afundo", "3x15-20")],
+        "resistencia": [("Stiff", "3x10-15"), ("Leg press", "3x10-15")]
+    },
+    "Ombro": {
+        "hipertrofia": [("Desenvolvimento militar", "4x8-12"), ("Arnold press", "4x8-12"), ("Elevação lateral", "4x8-12")],
+        "emagrecimento": [("Elevação lateral", "3x15-20"), ("Desenvolvimento militar", "3x15-20")],
+        "resistencia": [("Arnold press", "3x10-15"), ("Crucifixo inverso", "3x10-15")]
+    },
+    "Bíceps": {
+        "hipertrofia": [("Rosca direta", "4x8-12"), ("Rosca alternada", "4x8-12"), ("Rosca martelo", "4x8-12")],
+        "emagrecimento": [("Rosca direta", "3x15-20"), ("Rosca martelo", "3x15-20")],
+        "resistencia": [("Rosca alternada", "3x10-15"), ("Rosca direta", "3x10-15")]
+    },
+    "Tríceps": {
+        "hipertrofia": [("Tríceps francês", "4x8-12"), ("Tríceps banco", "4x8-12")],
+        "emagrecimento": [("Tríceps banco", "3x15-20"), ("Tríceps corda", "3x15-20")],
+        "resistencia": [("Tríceps banco", "3x10-15"), ("Tríceps francês", "3x10-15")]
+    },
+    "Abdômen": {
+        "hipertrofia": [("Prancha", "4x30s"), ("Crunch", "4x15-20")],
+        "emagrecimento": [("Bicicleta", "3x15-20"), ("Prancha", "3x30s")],
+        "resistencia": [("Crunch", "3x10-15"), ("Elevação de pernas", "3x10-15")]
+    },
 }
 
 # Função para gerar treino automático
 def gerar_treino(objetivo, experiencia, dias):
-    if objetivo == "hipertrofia":
-        reps = "8-12"
-        series = 4 if experiencia == "intermediário" else 3
-    elif objetivo == "emagrecimento":
-        reps = "15-20"
-        series = 3
-    else:
-        reps = "10-15"
-        series = 3
-
     treino = {}
-    grupos = list(grupos_musculares.keys())
+    grupos = list(exercicios.keys())
     for i in range(dias):
         grupo = grupos[i % len(grupos)]
-        treino[f"Dia {i+1} - {grupo}"] = [
-            f"{ex} - {series}x{reps}" for ex in grupos_musculares[grupo][:5]
-        ]
+        treino[f"Dia {i+1} - {grupo}"] = [f"{ex[0]} - {ex[1]}" for ex in exercicios[grupo][objetivo]]
     return treino
 
 # Função para gerar treino personalizado
@@ -56,8 +72,8 @@ def gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade):
     treino = {}
     for i in range(dias):
         grupo = grupos_escolhidos[i % len(grupos_escolhidos)]
-        exercicios = grupos_musculares[grupo][:series + 1]
-        treino[f"Dia {i+1} - {grupo}"] = [f"{ex} - {series}x{reps}" for ex in exercicios]
+        exercicios_grupo = exercicios[grupo][objetivo]
+        treino[f"Dia {i+1} - {grupo}"] = [f"{ex[0]} - {series}x{reps}" for ex in exercicios_grupo]
     return treino
 
 # Interface
@@ -86,7 +102,7 @@ if aba == "Treino Automático":
 elif aba == "Treino Personalizado":
     st.header("Gerar Treino Personalizado")
 
-    grupos_escolhidos = st.multiselect("Grupos Musculares", list(grupos_musculares.keys()))
+    grupos_escolhidos = st.multiselect("Grupos Musculares", list(exercicios.keys()))
     dias = st.slider("Dias de Treino", 1, 7, 3)
     volume = st.selectbox("Volume do Treino", ["baixo", "médio", "alto"])
     intensidade = st.selectbox("Intensidade do Treino", ["leve", "moderada", "alta"])
@@ -113,8 +129,8 @@ elif aba == "Treino Personalizado":
 
 elif aba == "Registrar Manual":
     st.header("Registrar Treino Manual")
-    grupo = st.selectbox("Grupo Muscular", list(grupos_musculares.keys()))
-    opcoes = grupos_musculares[grupo]
+    grupo = st.selectbox("Grupo Muscular", list(exercicios.keys()))
+    opcoes = [ex[0] for ex in exercicios[grupo]["hipertrofia"]]  # Considerando o objetivo "hipertrofia" como padrão
     escolhidos = st.multiselect("Escolha os exercícios", opcoes)
     if st.button("Registrar treino manual"):
         if escolhidos:
