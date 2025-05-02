@@ -84,18 +84,18 @@ aba = st.sidebar.radio("Menu", ["Treino Automático", "Treino Personalizado", "R
 if aba == "Treino Automático":
     st.header("Treino Gerado Automaticamente")
     treino = gerar_treino(usuario["objetivo"], usuario["experiencia"], usuario["dias_treino"])
-    for dia, exercicios in treino.items():
+    for dia, lista_exercicios in treino.items():
         with st.expander(dia):
-            for ex in exercicios:
+            for ex in lista_exercicios:
                 st.markdown(f"- {ex}")
 
     if st.button("Salvar este treino no histórico"):
-        for dia, exs in treino.items():
+        for dia, lista_exercicios in treino.items():
             st.session_state.historico.append({
                 "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
                 "tipo": "Automático",
                 "grupo": dia,
-                "exercicios": exs
+                "exercicios": lista_exercicios
             })
         st.success("Treino automático salvo no histórico!")
 
@@ -112,26 +112,26 @@ elif aba == "Treino Personalizado":
             st.warning("Selecione pelo menos um grupo muscular.")
         else:
             treino = gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, usuario["objetivo"])
-            for dia, exercicios in treino.items():
+            for dia, lista_exercicios in treino.items():
                 with st.expander(dia):
-                    for ex in exercicios:
+                    for ex in lista_exercicios:
                         st.markdown(f"- {ex}")
 
             if st.button("Salvar este treino personalizado"):
-                for dia, exs in treino.items():
+                for dia, lista_exercicios in treino.items():
                     st.session_state.historico.append({
                         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
                         "tipo": "Personalizado",
                         "grupo": dia,
-                        "exercicios": exs
+                        "exercicios": lista_exercicios
                     })
                 st.success("Treino personalizado salvo no histórico!")
 
 elif aba == "Registrar Manual":
     st.header("Registrar Treino Manual")
     grupo = st.selectbox("Grupo Muscular", list(exercicios.keys()))
-    objetivo = st.selectbox("Objetivo", ["hipertrofia", "emagrecimento", "resistencia"])  # Adicionando seleção de objetivo
-    opcoes = [ex[0] for ex in exercicios[grupo][objetivo]]  # Considerando o objetivo escolhido
+    objetivo = st.selectbox("Objetivo", ["hipertrofia", "emagrecimento", "resistencia"])
+    opcoes = [ex[0] for ex in exercicios[grupo][objetivo]]
     escolhidos = st.multiselect("Escolha os exercícios", opcoes)
     if st.button("Registrar treino manual"):
         if escolhidos:
@@ -148,9 +148,9 @@ elif aba == "Registrar Manual":
 elif aba == "Histórico":
     st.header("Histórico de Treinos")
     if st.session_state.historico:
-        for treino in reversed(st.session_state.historico):
-            st.subheader(f"{treino['data']} - {treino['grupo']} ({treino['tipo']})")
-            for ex in treino["exercicios"]:
+        for treino_registrado in reversed(st.session_state.historico):
+            st.subheader(f"{treino_registrado['data']} - {treino_registrado['grupo']} ({treino_registrado['tipo']})")
+            for ex in treino_registrado["exercicios"]:
                 st.markdown(f"- {ex}")
     else:
         st.info("Nenhum treino registrado ainda.")
