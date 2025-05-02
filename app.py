@@ -159,10 +159,11 @@ def exibir_treino():
             progress.progress(i + 1)
         st.success("Treino carregado!")
 
+        # Alteração aqui:
         for dia, exercicios in treino.items():
             with st.expander(dia):
                 for exercicio in exercicios:
-                    st.write(f"- {exercicio}")
+                    st.write(f"- {exercicio}")  # Exibindo exercícios diretamente
 
     with tabs[2]:
         st.subheader("Atualizar Dados")
@@ -210,24 +211,22 @@ def exibir_treino():
             st.markdown(f"**TMB (Taxa Metabólica Basal):** {tmb:.2f} kcal/dia")
             st.markdown(f"**Percentual de Gordura Estimado:** {gordura:.2f}%")
             st.markdown(f"**Massa Muscular Estimada:** {massa_magra:.2f} kg")
-            st.markdown(f"**Idade Metabólica Estimada:** {idade_metabolica:.0f} anos")
-            st.markdown(f"**Hidratação Recomendada:** {agua:.0f} ml por dia")
-            st.markdown(f"**Proteína Diária Recomendada:** {proteina:.2f} g")
-        else:
-            st.info("Informe a circunferência da cintura para visualizar as análises completas.")
+            st.markdown(f"**Idade Metabólica Estimada:** {idade_metabolica} anos")
+            st.markdown(f"**Recomendação de Hidratação:** {agua:.2f} litros/dia")
+            st.markdown(f"**Recomendação de Proteína:** {proteina:.2f} g/dia")
 
     with tabs[4]:
-        montar_treino_personalizado()
+        montar_treino_personalizado()  # Função que gera o treino personalizado
 
-# BLOCO PRINCIPAL
-if __name__ == "__main__":
-    if 'usuario' in st.session_state:
-        exibir_treino()
+# Função de inicialização
+def app():
+    splash_screen()
+
+    if 'usuario' not in st.session_state:
+        st.warning("Faça login para continuar.")
+        login()
     else:
-        splash_screen()
-        st.markdown("<h1 style='text-align: center;'>🏋️🏋️‍♀️</h1>", unsafe_allow_html=True)
-        opcao = st.sidebar.selectbox("Escolha uma opção", ["Login", "Cadastro"])
-        if opcao == "Login":
-            login()
-        else:
-            cadastro()
+        exibir_treino()
+
+if __name__ == "__main__":
+    app()
