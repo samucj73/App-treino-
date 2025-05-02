@@ -8,9 +8,19 @@ if "historico" not in st.session_state:
 # Dados do usuário (simulado)
 usuario = {
     "nome": "João",
-    "objetivo": "hipertrofia",
+    "objetivo": "Perda de peso",  # Exemplo com nome diferente do dicionário
     "experiencia": "intermediário",
     "dias_treino": 4
+}
+
+# Mapeamento de objetivos amigáveis para os usados no dicionário
+objetivo_map = {
+    "Ganho de massa": "hipertrofia",
+    "Perda de peso": "emagrecimento",
+    "Resistência": "resistencia",
+    "hipertrofia": "hipertrofia",
+    "emagrecimento": "emagrecimento",
+    "resistencia": "resistencia"
 }
 
 # Exercícios por grupo e objetivo
@@ -56,6 +66,7 @@ exercicios = {
 def gerar_treino(objetivo, experiencia, dias):
     treino = {}
     grupos = list(exercicios.keys())
+    objetivo = objetivo_map.get(objetivo, objetivo)
     for i in range(dias):
         grupo = grupos[i % len(grupos)]
         treino[f"Dia {i+1} - {grupo}"] = [f"{ex[0]} - {ex[1]}" for ex in exercicios[grupo][objetivo]]
@@ -65,6 +76,7 @@ def gerar_treino(objetivo, experiencia, dias):
 def gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, objetivo):
     volume_map = {"baixo": 2, "médio": 3, "alto": 4}
     intensidade_map = {"leve": "15-20", "moderada": "10-15", "alta": "6-10"}
+    objetivo = objetivo_map.get(objetivo, objetivo)
 
     series = volume_map.get(volume, 3)
     reps = intensidade_map.get(intensidade, "10-15")
