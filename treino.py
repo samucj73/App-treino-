@@ -130,7 +130,8 @@ elif aba == "Treino Personalizado":
 elif aba == "Registrar Manual":
     st.header("Registrar Treino Manual")
     grupo = st.selectbox("Grupo Muscular", list(exercicios.keys()))
-    opcoes = [ex[0] for ex in exercicios[grupo]["hipertrofia"]]  # Considerando o objetivo "hipertrofia" como padrão
+    objetivo = st.selectbox("Objetivo", ["hipertrofia", "emagrecimento", "resistencia"])  # Adicionando seleção de objetivo
+    opcoes = [ex[0] for ex in exercicios[grupo][objetivo]]  # Considerando o objetivo escolhido
     escolhidos = st.multiselect("Escolha os exercícios", opcoes)
     if st.button("Registrar treino manual"):
         if escolhidos:
