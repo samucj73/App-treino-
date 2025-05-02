@@ -62,7 +62,7 @@ def gerar_treino(objetivo, experiencia, dias):
     return treino
 
 # Função para gerar treino personalizado
-def gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade):
+def gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, objetivo):
     volume_map = {"baixo": 2, "médio": 3, "alto": 4}
     intensidade_map = {"leve": "15-20", "moderada": "10-15", "alta": "6-10"}
 
@@ -111,7 +111,7 @@ elif aba == "Treino Personalizado":
         if not grupos_escolhidos:
             st.warning("Selecione pelo menos um grupo muscular.")
         else:
-            treino = gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade)
+            treino = gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, usuario["objetivo"])
             for dia, exercicios in treino.items():
                 with st.expander(dia):
                     for ex in exercicios:
