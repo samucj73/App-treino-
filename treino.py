@@ -4,6 +4,7 @@ from datetime import datetime
 # Sessão de histórico
 if "historico" not in st.session_state:
     st.session_state.historico = []
+
 # Mapeamento de objetivos amigáveis para os usados no dicionário
 objetivo_map = {
     "Ganho de massa": "hipertrofia",
@@ -79,28 +80,34 @@ def gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, obj
         treino[f"Dia {i+1} - {grupo}"] = [f"{ex[0]} - {series}x{reps}" for ex in exercicios_grupo]
     return treino
 
-# Interface
+# Interface principal
 st.title("App de Treino Completo")
 
 aba = st.sidebar.radio("Menu", ["Treino Automático", "Treino Personalizado", "Registrar Manual", "Histórico"])
 
 if aba == "Treino Automático":
     st.header("Treino Gerado Automaticamente")
-    treino = gerar_treino(usuario["objetivo"], usuario["experiencia"], usuario["dias_treino"])
-    for dia, lista_exercicios in treino.items():
-        with st.expander(dia):
-            for ex in lista_exercicios:
-                st.markdown(f"- {ex}")
 
-    if st.button("Salvar este treino no histórico"):
+    objetivo_auto = st.selectbox("Objetivo", ["Ganho de massa", "Perda de peso", "Resistência"])
+    experiencia_auto = st.selectbox("Experiência", ["iniciante", "intermediário", "avançado"])
+    dias_treino_auto = st.slider("Dias de treino por semana", 1, 7, 3)
+
+    if st.button("Gerar Treino Automático"):
+        treino = gerar_treino(objetivo_auto, experiencia_auto, dias_treino_auto)
         for dia, lista_exercicios in treino.items():
-            st.session_state.historico.append({
-                "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                "tipo": "Automático",
-                "grupo": dia,
-                "exercicios": lista_exercicios
-            })
-        st.success("Treino automático salvo no histórico!")
+            with st.expander(dia):
+                for ex in lista_exercicios:
+                    st.markdown(f"- {ex}")
+
+        if st.button("Salvar este treino no histórico"):
+            for dia, lista_exercicios in treino.items():
+                st.session_state.historico.append({
+                    "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "tipo": "Automático",
+                    "grupo": dia,
+                    "exercicios": lista_exercicios
+                })
+            st.success("Treino automático salvo no histórico!")
 
 elif aba == "Treino Personalizado":
     st.header("Gerar Treino Personalizado")
@@ -109,12 +116,13 @@ elif aba == "Treino Personalizado":
     dias = st.slider("Dias de Treino", 1, 7, 3)
     volume = st.selectbox("Volume do Treino", ["baixo", "médio", "alto"])
     intensidade = st.selectbox("Intensidade do Treino", ["leve", "moderada", "alta"])
+    objetivo_perso = st.selectbox("Objetivo", ["Ganho de massa", "Perda de peso", "Resistência"])
 
     if st.button("Gerar Treino"):
         if not grupos_escolhidos:
             st.warning("Selecione pelo menos um grupo muscular.")
         else:
-            treino = gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, usuario["objetivo"])
+            treino = gerar_treino_personalizado(grupos_escolhidos, dias, volume, intensidade, objetivo_perso)
             for dia, lista_exercicios in treino.items():
                 with st.expander(dia):
                     for ex in lista_exercicios:
