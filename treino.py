@@ -4,15 +4,6 @@ from datetime import datetime
 # Sessão de histórico
 if "historico" not in st.session_state:
     st.session_state.historico = []
-
-# Dados do usuário (simulado)
-usuario = {
-    "nome": "João",
-    "objetivo": "Perda de peso",  # Exemplo com nome diferente do dicionário
-    "experiencia": "intermediário",
-    "dias_treino": 4
-}
-
 # Mapeamento de objetivos amigáveis para os usados no dicionário
 objetivo_map = {
     "Ganho de massa": "hipertrofia",
